@@ -1,0 +1,7 @@
+/.mypy_cache
+/.vscode
+/__pycache__
+/builds
+/dist
+/packages
+/venv*
