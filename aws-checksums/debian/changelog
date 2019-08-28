@@ -1,0 +1,12 @@
+aws-checksums (0.1.3) experimental; urgency=medium
+
+  * Fix MSVC ARM Build. It just forwards to the SW implementation, but it's better than nothing.
+
+ -- Amazon Web Services <https://github.com/awslabs/aws-checksums/issues>  Thu, 03 Jul 2019 19:49:00 -0000
+
+aws-checksums (0.1.2) experimental; urgency=medium
+
+  * Windows build fix patch. Install DLLs to the bin directory on windows (#15).
+  * To avoid taking a new build-time dependency, we copy over the AwsSharedLibSetup.cmake file from aws-c-common.
+
+ -- Amazon Web Services <https://github.com/awslabs/aws-c-common/issues>  Wed, 09 Jan 2019 19:06:00 -0000

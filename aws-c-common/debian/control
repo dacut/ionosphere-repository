@@ -1,0 +1,24 @@
+Source: aws-c-common
+Priority: optional
+Maintainer: David Cuthbert <dacut@kanga.org>
+Build-Depends: binutils, cmake, debhelper, gcc, make
+Standards-Version: 4.1.2
+Section: libs
+Homepage: https://github.com/awslabs/aws-c-common
+
+Package: aws-c-common-dev
+Section: libdevel
+Architecture: amd64
+Multi-Arch: same
+Depends: aws-c-common (= ${binary:Version})
+Description: Core c99 package for AWS SDK for C.
+ Core c99 package for AWS SDK for C. Includes cross-platform primitives, configuration,
+ data structures, and error handling.
+
+Package: aws-c-common
+Architecture: amd64
+Multi-Arch: same
+Depends: ${shlibs:Depends}
+Description: Core c99 package for AWS SDK for C.
+ Core c99 package for AWS SDK for C. Includes cross-platform primitives, configuration,
+ data structures, and error handling.

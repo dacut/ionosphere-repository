@@ -1,0 +1,11 @@
+aws-c-common (0.4.3) experimental; urgency=medium
+
+  * Depend on pthreads via Threads rather than manually (#473)
+
+ -- Amazon Web Services <https://github.com/awslabs/aws-c-common/issues>  Thu, 01 Aug 2019 17:31:00 -0000
+
+aws-c-common (0.4.2) experimental; urgency=medium
+
+  * Fixed issue where the wrong info was returned for some error codes.
+
+ -- Amazon Web Services <https://github.com/awslabs/aws-c-common/issues>  Mon, 15 Jul 2019 21:40:00 -0000

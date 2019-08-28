@@ -1,0 +1,24 @@
+Source: aws-checksums
+Priority: optional
+Maintainer: David Cuthbert <dacut@kanga.org>
+Build-Depends: binutils, cmake, debhelper, gcc, make
+Standards-Version: 4.1.2
+Section: libs
+Homepage: https://github.com/awslabs/aws-checksums
+
+Package: aws-checksums-dev
+Section: libdevel
+Architecture: amd64
+Multi-Arch: same
+Depends: aws-checksums (= ${binary:Version})
+Description: AWS HW-accelerated checksum library.
+ Cross-Platform HW-accelerated CRC32c and CRC32 with fallback to efficient SW
+ implementations. C interface with language bindings for each of our SDKs.
+
+Package: aws-checksums
+Architecture: amd64
+Multi-Arch: same
+Depends: ${shlibs:Depends}
+Description: AWS HW-accelerated checksum library.
+ Cross-Platform HW-accelerated CRC32c and CRC32 with fallback to efficient SW
+ implementations. C interface with language bindings for each of our SDKs.
