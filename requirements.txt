@@ -1,3 +1,4 @@
 docker >= 2.2
 pylint
 PyYAML >= 5.0
+requests >= 2.22

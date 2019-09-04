@@ -12,13 +12,14 @@ from shutil import copy2, rmtree
 from sys import argv
 from tempfile import mkdtemp
 from threading import Condition, local
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Sequence
+from typing import (
+    Any, Callable, Dict, Iterable, List, NamedTuple, Optional, Sequence)
 from urllib.parse import unquote_plus as url_unquote_plus, urlparse
-from urllib.request import urlopen
 
 import docker
 from docker.errors import BuildError, ContainerError
 from docker.models.images import Image
+import requests
 import yaml
 
 # pylint: disable=invalid-name,too-many-instance-attributes,too-many-arguments
@@ -243,37 +244,20 @@ class PackageBuild:
             if not exists(self.package_dir):
                 mkdir(self.package_dir)
 
-            with urlopen(self.package.resolved_download_url) as req:
+            log.debug("Downloading %s", self.package.resolved_download_url)
+            with requests.get(
+                    self.package.resolved_download_url, stream=True) as req:
                 with open(self.source_archive_path, "wb") as fd:
-                    buffer = bytearray(READ_BUFFER_SIZE)
-                    content_length = int(req.getheader("Content-Length"))
-                    total_read = 0
-
-                    while total_read < content_length:
-                        n_read = req.readinto(buffer)
-                        if n_read == 0:
-                            raise ValueError(
-                                f"Failed to read entire contents of "
-                                f"{self.package.resolved_download_url}: "
-                                f"read {total_read} byte(s); expected "
-                                f"{content_length} byte(s)",
-                                self.package.resolved_download_url,
-                                total_read, content_length)
-
-                        if n_read < READ_BUFFER_SIZE:
-                            fd.write(buffer[:n_read])
-                        else:
-                            fd.write(buffer)
-
-                        total_read += n_read
+                    for chunk in req.iter_content(chunk_size=READ_BUFFER_SIZE):
+                        fd.write(chunk)
             with self.download_cond:
-                self.source_state[self.package.name] = \
-                    SourcePackageState.Downloaded
+                self.source_state[self.package.name] = (
+                    SourcePackageState.Downloaded)
             return True
         except:                                     # noqa
             with self.download_cond:
-                self.source_state[self.package.name] = \
-                    SourcePackageState.Failed
+                self.source_state[self.package.name] = (
+                    SourcePackageState.Failed)
             raise
 
     @property
@@ -377,19 +361,10 @@ class PackageBuild:
             log.error("Failed to build %s-%s (%s %s): %s", self.package.name,
                       self.package.version, self.platform.os_name,
                       self.platform.arch, e)
-            for log_entry in e.build_log:
-                if "stream" in log_entry:
-                    m = LOG_STRIP_PATTERN.match(log_entry["stream"])
-                    assert m, "m failed to match %r" % log_entry["stream"]
-                    log.info("    %s", m.group(1))
-
-                if "errorDetail" in log_entry:
-                    m = LOG_STRIP_PATTERN.match(log_entry["errorDetail"]["message"])
-                    assert m
-                    log.error("   %s", m.group(1))
+            self.handle_log_entries(e.build_log)
             raise
 
-        log.debug("Build logs: %s", build_logs)
+        self.handle_log_entries(build_logs)
 
     def export(self, dest_root: str) -> None:
         """
@@ -422,12 +397,44 @@ class PackageBuild:
             raise
         log.debug("Build logs: %s", logs)
 
+    @staticmethod
+    def handle_log_entries(logs: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Emit log entries to the log.
+
+        If a log entry has a stream key, it is emitted as an INFO event.
+        If a log entry has an errorDetail key, it is emitted as an ERROR event.
+        If a log entry has an aux key, it is emitted as an INFO event and
+        the dictionary contents are saved and returned.
+        """
+        result: Dict[str, Any] = {}
+
+        for log_entry in logs:
+            if "stream" in log_entry:
+                m = LOG_STRIP_PATTERN.match(log_entry["stream"])
+                assert m, "m failed to match %r" % log_entry["stream"]
+                log.info("    %s", m.group(1))
+
+            if "errorDetail" in log_entry:
+                m = LOG_STRIP_PATTERN.match(log_entry["errorDetail"]["message"])
+                assert m
+                log.error("   %s", m.group(1))
+
+            if "aux" in log_entry:
+                for key, value in log_entry["aux"].items():
+                    result[key] = value
+                    log.info("    %s: %s", key, value)
+
+        return result
 
 def main(args: Sequence[str]) -> int:
     """
     The main entrypoint.
     """
-    log_config(level=DEBUG)
+    log_config(
+        level=DEBUG,
+        format=("%(threadName)s %(asctime)s %(name)s:%(levelname)s "
+                "%(filename)s %(lineno)d: %(message)s"))
 
     packages: List[Package] = []
     package_root = abspath("./packages")
